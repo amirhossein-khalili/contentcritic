@@ -23,7 +23,7 @@ services:
       - redis
 
   db:
-    image: postgres:13
+    image: docker.arvancloud.ir/postgres:16.8
     container_name: postgres_container
     environment:
       POSTGRES_DB: contentcritic_db
@@ -33,7 +33,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   redis:
-    image: redis:6
+    image: docker.arvancloud.ir/redis:7.4.2
     container_name: redis_container
     ports:
       - '6379:6379'
