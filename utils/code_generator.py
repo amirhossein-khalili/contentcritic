@@ -8,8 +8,8 @@ from rest_framework.response import Response
 logger = logging.getLogger(__name__)
 
 
-def code_generator(length=6):
+def code_generator(length=4):
 
-    code = "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+    code = "".join(random.choices(string.digits, k=length))
 
     return code
