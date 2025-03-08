@@ -37,9 +37,9 @@ ALLOWED_HOSTS = [
 ]
 
 
-ROOT_URLCONF = "contentcritic.urls"
+ROOT_URLCONF = "core.urls"
 
-WSGI_APPLICATION = "contentcritic.wsgi.application"
+WSGI_APPLICATION = "core.wsgi.application"
 
 
 # =============================================================================
