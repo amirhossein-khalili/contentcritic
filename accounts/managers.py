@@ -1,29 +1,26 @@
-from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
+from django.db import models
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, phone_number, email, full_name, password):
-        if not phone_number:
-            raise ValueError("user must have phone number")
-
-        if not email:
-            raise ValueError("user must have email")
-
-        if not full_name:
-            raise ValueError("user must have full name")
-
-        user = self.model(
-            phone_number=phone_number,
-            email=self.normalize_email(email),
-            full_name=full_name,
-        )
+    def create_user(self, phone, password=None, **extra_fields):
+        if not phone:
+            raise ValueError("The phone number must be provided")
+        phone = "".join(filter(str.isdigit, phone))
+        user = self.model(phone=phone, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone_number, email, full_name, password):
-        user = self.create_user(phone_number, email, full_name, password)
-        user.is_admin = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
+    def create_superuser(self, phone, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True")
+        return self.create_user(phone, password, **extra_fields)

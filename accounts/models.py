@@ -1,43 +1,44 @@
+import datetime
+
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.utils import timezone
 
 from .managers import UserManager
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(max_length=255, unique=True)
-    phone_number = models.CharField(max_length=11, unique=True)
-    full_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20, unique=True)
+    email = models.EmailField(blank=True, null=True)
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
-    is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = UserManager()
 
-    USERNAME_FIELD = "phone_number"
-    REQUIRED_FIELDS = ["email", "full_name"]
+    USERNAME_FIELD = "phone"
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email
-
-    def has_perm(self, perm, obj=None):
-        return True
-
-    def has_module_perms(self, app_label):
-        return True
-
-    @property
-    def is_staff(self):
-        return self.is_admin
-
-    class Meta:
-        verbose_name = "user"
-        verbose_name_plural = "users"
+        return self.phone
 
 
-# class OtpCode(models.Model):
-#     phone_number = models.CharField(max_length=11, unique=True)
-#     code = models.PositiveSmallIntegerField()
-#     created = models.DateTimeField(auto_now=True)
+class OTP(models.Model):
+    phone = models.CharField(max_length=20)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
 
-#     def __str__(self):
-#         return f"{self.phone_number} - {self.code} - {self.created}"
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.expires_at:
+            self.expires_at = timezone.now() + datetime.timedelta(minutes=5)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        return not self.used and timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.phone} (code: {self.code})"

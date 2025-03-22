@@ -1,131 +1,61 @@
-import logging
-from django.core.cache import cache
-from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status, views
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
 
-from utils import code_generator
-
-from .models import User
-from .serializers import (CustomTokenObtainPairSerializer,
-                          SignupStepOneSerializer, SignupStepTwoSerializer)
-
-logger = logging.getLogger(__name__)
+from .serializers import OTPSerializer
+from .services.authentication_facade import AuthenticationFacade
 
 
-# ==================================================
-#   Authentication
-# ==================================================
+class AuthenticationView(APIView):
 
+    def __init__(self):
+        self.auth_facade = AuthenticationFacade()
 
-class SignupStepOneView(APIView):
-    serializer_class = SignupStepOneSerializer
+    """
+    A single endpoint for both OTP-based signup and login.
+    This view leverages the Strategy pattern by delegating specific tasks (e.g., OTP handling, JWT generation)
+    to interchangeable service implementations, and the Facade pattern to simplify the authentication workflow.
+    """
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        """
+        Handle POST requests for OTP requests or verification.
+        - If only 'phone' is provided, an OTP is sent.
+        - If both 'phone' and 'otp' are provided, verify OTP and either sign up or log in the user.
 
+        Strategy Pattern: The AuthenticationFacade uses pluggable strategies (OTPServiceImpl, JWTServiceImpl)
+        to abstract the details of OTP generation/verification and token creation.
+        Facade Pattern: The AuthenticationFacade provides a unified interface, hiding the complexity of
+        user creation, OTP validation, and token generation from the view.
+        """
+
+        serializer = OTPSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data["email"]
 
-            verification_code = self.send_verification_code(email)
-            cache.set(
-                f"signup_{email}_user_data",
-                serializer.validated_data,
-                3600,
-            )
-            cache.set(
-                f"signup_{email}_verification_code",
-                verification_code,
-                180,
-            )
+            phone = serializer.validated_data["phone"]
+            otp = serializer.validated_data.get("otp")
 
-            return Response(
-                {"message": "Verification code sent to email"},
-                status=status.HTTP_200_OK,
-            )
+            if otp:
 
+                try:
+
+                    # Case 1: OTP is provided - attempt verification and authentication
+                    # Delegate to the facade to verify OTP and either create a user or log in
+                    # The facade internally uses strategies (OTPServiceImpl for OTP, JWTServiceImpl for tokens and UserValidation)
+
+                    result = self.auth_facade.verify_otp_and_authenticate(phone, otp)
+                    return Response(result, status=status.HTTP_200_OK)
+                except ValueError as e:
+                    return Response(
+                        {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            else:
+
+                # Case 2: No OTP provided - request a new OTP for the phone number
+                # The facade uses OTPServiceImpl (strategy) to generate and send the OTP
+
+                result = self.auth_facade.request_otp(phone)
+                return Response(result, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def send_verification_code(self, user_email):
-        code = code_generator()
-        print("--------------")
-        print('this is you code :' , code )
-        print("--------------")
-        return code
-
-
-class SignupStepTwoView(APIView):
-    serializer_class = SignupStepTwoSerializer
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
-            email = serializer.validated_data["email"]
-            code = serializer.validated_data["code"]
-
-            user_data = cache.get(f"signup_{email}_user_data")
-
-            if user_data:
-                code_data = cache.get(f"signup_{email}_verification_code")
-
-                if not code_data:
-                    verification_code = self.send_verification_code(email)
-                    cache.set(
-                        f"signup_{email}_verification_code",
-                        verification_code,
-                        180,
-                    )
-
-                    return Response(
-                        {
-                            "message": "Your code has expired. A new code has been sent to you.",
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-
-                  
-                if code == code_data:
-                    user = User(
-                        phone_number=user_data["phone_number"], email=user_data["email"]
-                    )
-                    user.set_password(user_data["password"])
-                    user.save()
-
-                    # Delete user data from cache
-                    cache.delete(f"signup_{email}_user_data")
-                    cache.delete(f"signup_{email}_verification_code")
-
-                    return Response(
-                        {"message": "You have signed up successfully 🥳🎉."},
-                        status=status.HTTP_201_CREATED,
-                    )
-
-                else:
-                    return Response(
-                        {"error": "invalid code"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            return Response(
-                {"error": "Please complete the first step of the signup process."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def send_verification_code(self, user_email):
-        code = code_generator()
-        print("--------------")
-        print('this is you code :' , code )
-        print("--------------")
-        return code
-
-
-class LoginView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
