@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "accounts.apps.AccountsConfig",
     "notification.apps.NotificationConfig",
+    "content.apps.ContentConfig",
 ]
 
 MIDDLEWARE = [
@@ -226,5 +227,5 @@ DATABASES = {
 }
 
 
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = "redis://localhost:8006/1"
+CELERY_RESULT_BACKEND = "redis://localhost:8006/1"
