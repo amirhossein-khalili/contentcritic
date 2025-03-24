@@ -5,6 +5,8 @@ from .models import Article, ArticleRatingStats, Rating
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
+    """Admin configuration for Article model."""
+
     list_display = ("id", "title", "created_at", "updated_at")
     search_fields = ("title", "content")
     list_filter = ("created_at",)
@@ -13,6 +15,8 @@ class ArticleAdmin(admin.ModelAdmin):
 
 @admin.register(Rating)
 class RatingAdmin(admin.ModelAdmin):
+    """Admin configuration for Rating model."""
+
     list_display = ("id", "article", "user", "score", "created_at")
     list_filter = ("score", "created_at")
     search_fields = ("article__title", "article__id", "user__phone")
@@ -22,6 +26,8 @@ class RatingAdmin(admin.ModelAdmin):
 
 @admin.register(ArticleRatingStats)
 class ArticleRatingStatsAdmin(admin.ModelAdmin):
+    """Admin configuration for ArticleRatingStats model."""
+
     list_display = (
         "article",
         "total_count",

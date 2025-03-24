@@ -1,10 +1,8 @@
-from django.shortcuts import render
+from django.db.models import Prefetch
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
-from content.models import Article
-
-from .models import Rating
+from .models import Article, Rating
 from .pagination import ArticlePagination
 from .serializers import ArticleListSerializer, RatingCreateSerializer
 
@@ -15,6 +13,17 @@ class ArticleListView(generics.ListAPIView):
     pagination_class = ArticlePagination
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_authenticated:
+            user_ratings_prefetch = Prefetch(
+                "ratings",
+                queryset=Rating.objects.filter(user=self.request.user),
+                to_attr="user_rating_list",
+            )
+            queryset = queryset.prefetch_related(user_ratings_prefetch)
+        return queryset
+
 
 class RatingCreateView(generics.CreateAPIView):
     queryset = Rating.objects.all()
@@ -22,19 +31,19 @@ class RatingCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
         user = request.user
-        article = request.data.get("article")
-        score = request.data.get("score")
+        article = validated_data["article"]
+        score = validated_data["score"]
 
-        rating = Rating.objects.filter(user=user, article=article).first()
+        rating, created = Rating.objects.update_or_create(
+            article=article, user=user, defaults={"score": score}
+        )
 
-        if rating:
-            rating.score = score
-            rating.save()
-            serializer = self.get_serializer(rating)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(rating)
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=status_code)

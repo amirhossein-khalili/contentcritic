@@ -9,6 +9,11 @@ class Article(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["-created_at"]),
+        ]
+
     def __str__(self):
         return self.title
 
@@ -37,7 +42,7 @@ class Rating(models.Model):
         Article, related_name="ratings", on_delete=models.CASCADE
     )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    score = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    score = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -11,11 +11,25 @@ class ArticleListSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "user_rating"]
 
     def get_user_rating(self, obj):
-        user = self.context["request"].user
-        if user.is_authenticated:
-            rating = Rating.objects.filter(article=obj, user=user).first()
-            return rating.score if rating else None
+        if hasattr(obj, "user_rating_list") and obj.user_rating_list:
+            return obj.user_rating_list[0].score
         return None
+
+
+class RatingCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ["article", "score"]
+        read_only_fields = ["article"]
+
+    def validate_score(self, value):
+        if not (0 <= value <= 5):
+            raise serializers.ValidationError("Score must be between 0 and 5.")
+        return value
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        return Rating.objects.create(user=user, **validated_data)
 
 
 class RatingCreateSerializer(serializers.ModelSerializer):
@@ -24,10 +38,6 @@ class RatingCreateSerializer(serializers.ModelSerializer):
         fields = ["article", "score"]
 
     def validate_score(self, value):
-        if not (1 <= value <= 5):
-            raise serializers.ValidationError("Score must be between 1 and 5.")
+        if not (0 <= value <= 5):
+            raise serializers.ValidationError("Score must be between 0 and 5.")
         return value
-
-    def create(self, validated_data):
-        user = self.context["request"].user
-        return Rating.objects.create(user=user, **validated_data)
