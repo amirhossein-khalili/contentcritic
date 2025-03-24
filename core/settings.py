@@ -32,7 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
-    "drf_spectacular",
+    # "drf_spectacular",
     "accounts.apps.AccountsConfig",
     "notification.apps.NotificationConfig",
     "content.apps.ContentConfig",
