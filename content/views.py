@@ -8,13 +8,16 @@ from .serializers import ArticleListSerializer, RatingCreateSerializer
 
 
 class ArticleListView(generics.ListAPIView):
-    queryset = Article.objects.all().order_by("-created_at")
     serializer_class = ArticleListSerializer
     pagination_class = ArticlePagination
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            Article.objects.all()
+            .order_by("-created_at")
+            .prefetch_related("rating_stats")
+        )
         if self.request.user.is_authenticated:
             user_ratings_prefetch = Prefetch(
                 "ratings",
