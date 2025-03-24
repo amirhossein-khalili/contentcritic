@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from content.models import Article, Rating
+from ..models import Article, Rating
 
 
 class RatingSignalTests(TestCase):
@@ -24,8 +24,8 @@ class RatingSignalTests(TestCase):
         self.assertAlmostEqual(float(self.article.rating_stats.avg_rating), 4.0)
         self.assertEqual(self.article.rating_stats.highest_rating, 4)
         self.assertEqual(self.article.rating_stats.lowest_rating, 4)
-        # Check rating distribution: keys are integers from 0 to 5.
-        self.assertEqual(self.article.rating_stats.rating_distribution[4], 1)
+        # Access using string key "4"
+        self.assertEqual(self.article.rating_stats.rating_distribution["4"], 1)
 
     def test_rating_signal_on_update(self):
         """
@@ -40,7 +40,7 @@ class RatingSignalTests(TestCase):
         self.assertAlmostEqual(float(self.article.rating_stats.avg_rating), 5.0)
         self.assertEqual(self.article.rating_stats.highest_rating, 5)
         self.assertEqual(self.article.rating_stats.lowest_rating, 5)
-        self.assertEqual(self.article.rating_stats.rating_distribution[5], 1)
+        self.assertEqual(self.article.rating_stats.rating_distribution["5"], 1)
 
     def test_rating_signal_with_multiple_ratings(self):
         """
@@ -55,5 +55,5 @@ class RatingSignalTests(TestCase):
         )  # (3+5)/2
         self.assertEqual(self.article.rating_stats.highest_rating, 5)
         self.assertEqual(self.article.rating_stats.lowest_rating, 3)
-        self.assertEqual(self.article.rating_stats.rating_distribution[3], 1)
-        self.assertEqual(self.article.rating_stats.rating_distribution[5], 1)
+        self.assertEqual(self.article.rating_stats.rating_distribution["3"], 1)
+        self.assertEqual(self.article.rating_stats.rating_distribution["5"], 1)
