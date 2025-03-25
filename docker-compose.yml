@@ -1,45 +1,69 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  db:
+    image: docker.arvancloud.ir/postgres:16.8
+    container_name: postgres_contentcritic_container
+    ports:
+      - "${DATABASE_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: docker.arvancloud.ir/redis:7.4.2
+    container_name: redis_contentcritic_container
+    ports:
+      - "${CACHE_PORT}:6379"
+    env_file:
+      - .env
+    volumes:
+      - cachedata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     volumes:
       - .:/app
     ports:
-      - '8000:8000'
+      - "8000:8000"
     image: contentcritic
     container_name: contentcritic_container
     command: python manage.py runserver 0.0.0.0:8000
     environment:
-      - DATABASE_NAME=contentcritic_db
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - CACHE_LOCATION=${CACHE_LOCATION}
+      - CACHE_PORT=${CACHE_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - FCM_SERVER_API_KEY=${FCM_SERVER_KEY}
+      - SMS_NUMBER_SENDER=${SMS_NUMBER_SENDER}
+      - SMS_SERVER_API_KEY=${SMS_SERVER_API_KEY}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
     depends_on:
       - db
-      - redis
-
-  db:
-    image: docker.arvancloud.ir/postgres:16.8
-    container_name: postgres_container
-    environment:
-      POSTGRES_DB: contentcritic_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  redis:
-    image: docker.arvancloud.ir/redis:7.4.2
-    container_name: redis_container
-    ports:
-      - '6379:6379'
-    volumes:
-      - redisdata:/data
+      - cache
+    env_file:
+      - .env
 
 volumes:
   pgdata:
-  redisdata:
+  cachedata:
