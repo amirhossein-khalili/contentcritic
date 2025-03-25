@@ -19,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   cache:
     image: docker.arvancloud.ir/redis:7.4.2
@@ -34,6 +36,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   app:
     build: .
@@ -41,7 +45,7 @@ services:
       - .:/app
     ports:
       - "8000:8000"
-    image: contentcritic
+    # image: contentcritic
     container_name: contentcritic_container
     command: python manage.py runserver 0.0.0.0:8000
     environment:
@@ -63,7 +67,13 @@ services:
       - cache
     env_file:
       - .env
+    networks:
+      - backend
 
 volumes:
   pgdata:
   cachedata:
+
+networks:
+  backend:
+    driver: bridge
