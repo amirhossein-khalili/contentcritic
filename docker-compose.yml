@@ -39,6 +39,23 @@ services:
     networks:
       - backend
 
+  broker:
+    image: docker.arvancloud.ir/redis:7.4.2
+    container_name: broker_contentcritic_container
+    ports:
+      - "${CELERY_BROKER_PORT}:6379"
+    env_file:
+      - .env
+    volumes:
+      - brokerdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
   app:
     build: .
     volumes:
@@ -54,8 +71,9 @@ services:
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
-      - CACHE_LOCATION=${CACHE_LOCATION}
-      - CACHE_PORT=${CACHE_PORT}
+      - CACHE_LOCATION=redis://cache:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+      - CELERY_BROKER_URL=redis://broker:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - FCM_SERVER_API_KEY=${FCM_SERVER_KEY}
       - SMS_NUMBER_SENDER=${SMS_NUMBER_SENDER}
@@ -65,6 +83,7 @@ services:
     depends_on:
       - db
       - cache
+      - broker
     env_file:
       - .env
     networks:
@@ -73,6 +92,7 @@ services:
 volumes:
   pgdata:
   cachedata:
+  brokerdata:
 
 networks:
   backend:

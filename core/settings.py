@@ -200,9 +200,6 @@ FCM_SERVER_KEY = os.environ.get("FIREBASE_SERVER_KEY")
 #
 # =============================================================================
 
-REDIS_HOST = os.environ.get("REDIS_HOST")
-REDIS_PORT = os.environ.get("REDIS_PORT")
-REDIS_DB = os.environ.get("REDIS_DB")
 
 CACHES = {
     "default": {
@@ -218,14 +215,14 @@ CACHES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "NAME": os.environ.get("DATABASE_NAME"),
+        "USER": os.environ.get("DATABASE_USER"),
+        "PASSWORD": os.environ.get("DATABASE_PASSWORD"),
         "HOST": os.getenv("DATABASE_HOST", "db"),
         "PORT": os.getenv("DATABASE_PORT", "5432"),
     }
 }
 
 
-CELERY_BROKER_URL = "redis://localhost:8006/1"
-CELERY_RESULT_BACKEND = "redis://localhost:8006/1"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
