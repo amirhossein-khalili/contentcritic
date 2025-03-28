@@ -13,7 +13,7 @@ redis:
 	-d  docker.arvancloud.ir/redis:7.4.2
 
 broker:
-	docker run --name broker_contentcritic_container -p 8006:6379 \
+	docker run --name broker_contentcritic_container -p 8007:6379 \
 	-v redis_data:/var/lib/redis/data \
 	--rm \
 	-d  docker.arvancloud.ir/redis:7.4.2
@@ -22,7 +22,7 @@ createdb:
 	docker exec -it postgres_contentcritic_container createdb --username=postgres --owner=postgres content
 
 dropdb:
-	docker exec -it postgres_contentcritic_container dropdb --username_
+	docker exec -it postgres_contentcritic_container dropdb --username=postgres content
 
 
 celerybeat :
