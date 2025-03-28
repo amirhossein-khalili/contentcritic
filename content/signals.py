@@ -8,7 +8,10 @@ from .models import Article, ArticleRatingStats, Rating
 @receiver(post_save, sender=Article)
 def create_article_rating_stats(sender, instance, created, **kwargs):
     if created:
-        ArticleRatingStats.objects.create(article=instance)
+        initial_dist = {i: 0 for i in range(6)}
+        ArticleRatingStats.objects.create(
+            article=instance, rating_distribution=initial_dist
+        )
 
 
 @receiver(post_save, sender=Rating)

@@ -24,7 +24,7 @@ class ArticleRatingStats(models.Model):
     )
     total_count = models.PositiveIntegerField(default=0)
     avg_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
-    rating_distribution = models.JSONField()
+    rating_distribution = models.JSONField(default=dict)
     highest_rating = models.IntegerField(default=0)
     lowest_rating = models.IntegerField(default=0)
     last_updated_at = models.DateTimeField(auto_now=True)
